@@ -1,0 +1,70 @@
+# Data files - large datasets
+/data/
+*.csv
+*.pkl
+*.pickle
+*.parquet
+*.h5
+*.hdf5
+
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+/android/.gradle/
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+/android/local.properties
+*.apk
+*.aab
+
+# iOS
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/Flutter.framework/
+/ios/Flutter/Flutter.podspec
+*.ipa
+
+# Windows
+/windows/flutter/ephemeral/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+*.dmg
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Other large files
+*.bin
+*.model
+*.weights
+*.onnx
+*.pt
+*.pth
