@@ -37,15 +37,13 @@ It combines **AI**, **GIS**, and **social data** to recommend locations that mat
 
 ## 🧩 Architecture
 
-```
+
 User Input → Data Fetcher (Social APIs, Mobility DB)
            → Area Embedding Engine (Area2Vec / CTLE)
            → Context Analyzer (Weather, Crowding)
            → Route Optimizer
            → Interactive Map UI
-```
 
----
 
 ## 🧭 Use Cases
 
