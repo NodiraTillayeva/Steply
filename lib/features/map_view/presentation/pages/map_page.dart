@@ -282,23 +282,14 @@ class _MapPageState extends State<MapPage> with SingleTickerProviderStateMixin {
                         ),
                         child: Row(
                           children: [
-                            // STEPLY logo mark
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                gradient: AppColors.primaryGradient,
-                                borderRadius: BorderRadius.circular(7),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'S',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
+                            // STEPLY logo
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(7),
+                              child: Image.asset(
+                                'assets/data/steply_logo.png',
+                                width: 28,
+                                height: 28,
+                                fit: BoxFit.cover,
                               ),
                             ),
                             const SizedBox(width: 12),

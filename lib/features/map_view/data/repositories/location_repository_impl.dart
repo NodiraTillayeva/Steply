@@ -106,31 +106,7 @@ class LocationRepositoryImpl implements LocationRepository {
 
   @override
   Future<List<HeatmapPoint>> getHeatmapData() async {
-    final data = await mobilityDatasource.getMobilityData();
-
-    // Aggregate into grid cells for heatmap
-    final Map<String, List<double>> grid = {};
-    for (final point in data) {
-      final gridLat = (point.latitude / 0.002).floor() * 0.002;
-      final gridLng = (point.longitude / 0.002).floor() * 0.002;
-      final key = '${gridLat.toStringAsFixed(4)},${gridLng.toStringAsFixed(4)}';
-      grid.putIfAbsent(key, () => [0, 0, 0]); // lat, lng, count
-      grid[key]![0] = gridLat + 0.001;
-      grid[key]![1] = gridLng + 0.001;
-      grid[key]![2] = grid[key]![2] + 1;
-    }
-
-    if (grid.isEmpty) return [];
-
-    final maxCount =
-        grid.values.map((v) => v[2]).reduce((a, b) => a > b ? a : b);
-
-    return grid.values.map((v) {
-      return HeatmapPoint(
-        latitude: v[0],
-        longitude: v[1],
-        intensity: (v[2] / maxCount).clamp(0.0, 1.0),
-      );
-    }).toList();
+    // Use pre-computed heatmap from JSON
+    return mobilityDatasource.getPrecomputedHeatmap();
   }
 }

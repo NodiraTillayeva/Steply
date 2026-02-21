@@ -1,0 +1,525 @@
+STEPLY — AI-Powered Travel Companion for Nagoya, Japan
+======================================================
+Complete Project Description: UI Design, Features, Backend & Connections
+
+Version: 1.0.0+1
+Platform: Flutter (iOS & Android)
+Architecture: Clean Architecture with BLoC state management
+
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+Steply is an AI-powered travel companion app focused on Nagoya, Japan. It
+combines mobility analytics, weather data, OpenAI GPT-4o vision, and crowd
+intelligence to help travelers discover places, plan optimized itineraries,
+and make data-driven decisions about when and where to visit.
+
+Users share TikTok or Instagram links via the iOS Share Extension, and the app
+uses GPT-4o (text + vision), Whisper audio transcription, and video frame
+analysis to extract specific venues, restaurants, and attractions mentioned in
+the content. Extracted places are saved to a wishlist, shown on an interactive
+map, and can be organized into AI-optimized itineraries based on real crowd
+patterns.
+
+
+================================================================================
+2. FEATURES
+================================================================================
+
+--- Feature 1: Wishlist (AI-Powered Place Extraction) -------------------------
+
+Purpose: Extract travel destinations from social media URLs or screenshots
+using multimodal AI.
+
+How it works:
+  - Users share TikTok/Instagram/web URLs to the app via iOS Share Extension
+  - The app scrapes content using multiple strategies:
+    * TikTok: oEmbed API, __UNIVERSAL_DATA_FOR_REHYDRATION__ JSON,
+      __NEXT_DATA__ JSON, OG meta tags, HTML parsing
+    * Instagram: OG meta tags, JSON-LD structured data, Twitter card tags,
+      alt text extraction, meta description
+    * Generic: Full HTML parsing, OG tags, meta tags
+  - Video processing pipeline:
+    * Downloads the video to a temp file
+    * Extracts 3 key frames at 1s, 10s, and 25s using native platform APIs
+    * Transcribes audio via OpenAI Whisper API (speech-to-text)
+  - All extracted data (text metadata + audio transcript + OG thumbnail +
+    video frames) is sent to GPT-4o as a multimodal request
+  - GPT-4o extracts specific venues with coordinates, descriptions, event
+    dates, and local tips
+  - Places are saved to a wishlist with rich metadata
+
+Key files:
+  lib/features/wishlist/data/datasources/openai_remote_datasource.dart
+  lib/features/wishlist/presentation/pages/wishlist_page.dart
+  lib/features/wishlist/presentation/pages/wishlist_map_page.dart
+  lib/features/wishlist/presentation/widgets/place_analysis_sheet.dart
+  lib/features/wishlist/domain/entities/wishlist_place.dart
+
+Supported sources:
+  - TikTok (oEmbed + HTML parsing + video download)
+  - Instagram (OG tags + JSON-LD + video download)
+  - Twitter/X, Facebook, YouTube, Threads (OG metadata)
+  - Generic web pages (full HTML)
+  - Screenshots (image analysis via GPT-4o Vision)
+
+
+--- Feature 2: Explore (Interactive Map with Crowd Heatmaps) ------------------
+
+Purpose: Visualize Nagoya with POIs, real-time crowd density heatmaps, and
+satellite view toggle.
+
+How it works:
+  - Displays OpenStreetMap or ESRI Satellite tiles
+  - Overlays crowd heatmap generated from 8760+ mobility data records
+  - Shows categorized POIs (attractions, restaurants, shopping, transport)
+  - Displays wishlist places as pink heart markers on the map
+  - Glassmorphic search bar with "STEPLY" logo and AI badge
+  - Pulsing AI suggestion chip ("Less crowded now. Great time to explore!")
+
+Key files:
+  lib/features/map_view/presentation/pages/map_page.dart
+  lib/features/map_view/presentation/bloc/map_bloc.dart
+  lib/features/map_view/domain/entities/poi.dart
+  lib/features/map_view/domain/entities/heatmap_point.dart
+
+
+--- Feature 3: Journey (AI-Optimized Itinerary Planner) -----------------------
+
+Purpose: Build and auto-optimize trip itineraries based on crowd patterns.
+
+How it works:
+  1. User selects trip dates (today, weekend, month, or custom range)
+  2. Adds stops from POI library or wishlist
+  3. AI analyzes mobility data for each location across selected dates
+  4. Greedy algorithm assigns optimal visit times (lowest crowd hours)
+  5. Stops are sorted chronologically with visit times and durations
+
+Optimization algorithm:
+  - Collects crowd scores for each stop at each available hour (8am-8pm)
+  - Averages crowd density across trip days
+  - Sorts stops by constraint (most limited options first)
+  - Assigns each stop to its best available low-crowd hour
+  - Emerald gradient "Organize with AI" button triggers optimization
+
+Key files:
+  lib/features/analysis/presentation/pages/itinerary_page.dart
+  lib/features/analysis/presentation/bloc/itinerary_bloc.dart
+  lib/features/analysis/domain/entities/itinerary.dart
+
+
+--- Feature 4: Insights (Crowd & Weather Intelligence) ------------------------
+
+Purpose: Deep analytics combining mobility patterns, weather data, and
+AI-powered recommendations.
+
+Displayed insights:
+  1. Movement Intelligence: Total records analyzed, hotspots identified
+  2. Current Conditions: Comfort index, crowd pulse, real-time weather
+  3. Crowd Intelligence: Top 5 hotspots with visit counts, peak times,
+     average duration
+  4. Temporal Patterns:
+     - Hourly flow chart (24 hours)
+     - Weekly rhythm (7 days)
+     - 7x24 activity heatmap
+  5. Weather Correlation: Monthly weather summaries with visitability scores
+  6. Smart Recommendations: Best times, quiet areas, weather-optimal periods
+
+Key files:
+  lib/features/analysis/presentation/pages/analysis_page.dart
+  lib/features/analysis/presentation/bloc/comfort_bloc.dart
+  lib/features/analysis/presentation/widgets/analysis_charts.dart
+  lib/features/analysis/presentation/widgets/recommendation_card.dart
+
+
+--- Feature 5: Profile (Settings & Preferences) -------------------------------
+
+Tabs:
+  1. Saved Places: Wishlist items with action menu (add to trip, analyze, remove)
+  2. Preferences: Travel style (cultural/foodie/nature), crowd preference, pace
+  3. Settings: Map style, appearance, language, notifications, location
+
+Key files:
+  lib/features/profile/presentation/pages/profile_page.dart
+
+
+================================================================================
+3. ARCHITECTURE
+================================================================================
+
+Clean Architecture with 3 layers:
+
+  Presentation Layer (UI + BLoC)
+    └── Pages (screens)
+    └── Widgets (reusable components)
+    └── BLoCs (business logic + state management)
+
+  Domain Layer (Business Logic)
+    └── Entities (data models)
+    └── Repositories (interfaces/contracts)
+    └── Use Cases (single-responsibility operations)
+
+  Data Layer (Implementation)
+    └── Repositories (concrete implementations)
+    └── Datasources (local CSV, remote APIs)
+
+State Management: BLoC Pattern
+  Event → BLoC → UseCase → Repository → Datasource → API/CSV
+    ↓
+  State Update → UI Rebuild
+
+BLoCs:
+  - MapBloc: Map state (POIs, heatmap, satellite toggle)
+  - WishlistBloc: Wishlist management (extract, add, remove, insights)
+  - ItineraryBloc: Trip planning and AI optimization
+  - ComfortBloc: Analytics, weather, and recommendations
+
+Dependency Injection: GetIt (lib/core/di/injection.dart)
+  - 3 datasources registered
+  - 5 repositories registered
+  - 28 use cases registered
+  - 4 BLoCs registered as factories
+  - 1 service (SharingIntentService)
+
+
+================================================================================
+4. DOMAIN ENTITIES
+================================================================================
+
+Wishlist Domain:
+  WishlistPlace:
+    - id, name, latitude, longitude, description
+    - eventDate, eventEndDate (for limited-time events)
+    - sourceUrl, addedAt, localTips[]
+    - rawSourceContent, imageUrl
+
+Map Domain:
+  Poi:
+    - name, latitude, longitude
+    - category (attraction | restaurant | shopping | transport)
+    - description
+
+  HeatmapPoint:
+    - latitude, longitude, intensity
+
+Analysis Domain:
+  MobilityDataPoint:
+    - index, latitude, longitude, elapsedTime, dayOfWeek, startTime
+
+  PopularArea:
+    - name, latitude, longitude, visitCount
+    - avgElapsedTime, peakDay, peakHour
+
+  ComfortIndex:
+    - value (0.0-1.0), level (low | medium | high), dataPointCount
+
+  TemporalAnalysis:
+    - weekdayCount, weekendCount, busiestHour, quietestHour
+    - hourlyDistribution (24 values)
+    - dayOfWeekDistribution (7 values)
+    - temporalHeatmap (7x24 grid)
+
+  WeatherData:
+    - time, temperature, precipitation, weatherCode, windSpeed
+    - condition (sunny | cloudy | rainy | snowy | stormy)
+
+  MonthlyWeatherSummary:
+    - month, avgTemperature, totalPrecipitation
+    - dominantCondition, visitabilityScore
+
+  PlaceInsights:
+    - localTips[], bestSeason, vibe, highlights[], caveat
+
+  Itinerary:
+    - id, name, stops[], totalDuration, startDate, endDate
+
+  ItineraryStop:
+    - name, latitude, longitude, duration, visitTime
+
+
+================================================================================
+5. BACKEND CONNECTIONS & APIs
+================================================================================
+
+--- OpenAI GPT-4o API ---------------------------------------------------------
+
+Endpoint: https://api.openai.com/v1/chat/completions
+Model: gpt-4o
+Temperature: 0.1 (extraction), 0.3 (insights)
+
+Used for:
+  1. Place extraction from URLs (text + vision multimodal)
+  2. Place extraction from screenshots (vision)
+  3. Place insights generation (local tips, vibe, highlights)
+
+Request format:
+  - System prompt with extraction rules
+  - User message with text content + images (OG thumbnail + video frames)
+  - Responds with JSON array of places or JSON object of insights
+
+--- OpenAI Whisper API --------------------------------------------------------
+
+Endpoint: https://api.openai.com/v1/audio/transcriptions
+Model: whisper-1
+
+Used for:
+  - Transcribing video audio from TikTok/Instagram reels
+  - Videos downloaded to temp file, sent as multipart form
+  - File size limit: 25MB (typical social media videos are 5-15MB)
+
+--- Open-Meteo Weather API ----------------------------------------------------
+
+Historical: https://archive-api.open-meteo.com/v1/archive
+Current:    https://api.openai.com/v1/forecast
+
+Location: Nagoya (35.1815, 136.9066)
+Variables: temperature_2m, precipitation, weathercode, windspeed_10m
+
+Used for:
+  - Monthly weather summaries with visitability scores
+  - Current conditions for comfort index
+  - Weather-crowd correlation analysis
+
+--- Local Data (CSV) ----------------------------------------------------------
+
+File: assets/data/nagoya_mobility.csv
+Records: 8760+ mobility data points
+
+Fields: index, latitude, longitude, elapsed_time, day_of_week, start_time
+
+Used for:
+  - Crowd density heatmaps
+  - Popular area identification
+  - Temporal pattern analysis (hourly/daily/weekly)
+  - Itinerary optimization (crowd-aware scheduling)
+  - Comfort index calculation
+
+
+================================================================================
+6. iOS NATIVE INTEGRATION
+================================================================================
+
+--- Share Extension -----------------------------------------------------------
+
+Purpose: Accept URL shares from TikTok, Instagram, Safari, and other apps.
+
+Files:
+  ios/ShareExtension/ShareViewController.swift
+  ios/ShareExtension/Info.plist
+  ios/ShareExtension/ShareExtension.entitlements
+
+Flow:
+  1. User taps "Share" in TikTok/Instagram → selects Steply
+  2. ShareViewController extracts the URL (public.url or public.plain-text)
+  3. Saves URL to App Group UserDefaults (group.com.example.steplynara.shared)
+  4. Attempts to open main app via URL scheme (steply://share?url=...)
+  5. Extension closes
+
+--- AppDelegate (Method Channel Bridge) --------------------------------------
+
+File: ios/Runner/AppDelegate.swift
+
+Method Channel: com.example.steply/share
+  - getSharedURL: Returns URL from App Group or URL scheme parameter
+  - debugShareSetup: Verifies App Group accessibility
+
+URL Scheme: steply:// (registered in Info.plist)
+App Group: group.com.example.steplynara.shared
+
+--- SharingIntentService (Flutter side) ---------------------------------------
+
+File: lib/core/services/sharing_intent_service.dart
+
+  - Polls method channel every 2 seconds for shared URLs
+  - Validates URL format (http/https)
+  - Triggers WishlistBloc.ExtractFromUrl event
+  - Navigates to wishlist tab automatically
+
+--- Android Share Intent ------------------------------------------------------
+
+File: android/app/src/main/AndroidManifest.xml
+
+  <intent-filter>
+    <action android:name="android.intent.action.SEND" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <data android:mimeType="text/plain" />
+  </intent-filter>
+
+
+================================================================================
+7. UI DESIGN & THEME
+================================================================================
+
+Design Language: Premium, modern, glassmorphic
+
+Color Palette:
+  - Primary: Deep Indigo (#3D5AF1) — main brand color
+  - Accent: Warm Teal (#14B8A6) — AI intelligence indicators
+  - Coral: Warm emphasis (#FF6B6B)
+  - Emerald: Success/optimal (#10B981)
+  - Amber: Moderate/sunny (#F59E0B)
+
+Gradients:
+  primaryGradient, accentGradient, coralGradient, emeraldGradient,
+  warmBgGradient, darkBgGradient
+
+Shadows: 4 levels (sm, md, lg, elevated) + glow effects
+Typography: 13 text styles with tight letter-spacing
+Grid System: 8pt (xs=4, sm=8, md=16, lg=24, xl=32, xxl=48)
+Border Radius: sm(8), md(12), lg(16), xl(20), xxl(24), full(999)
+
+Theme file: lib/core/theme/app_theme.dart
+
+--- Navigation ----------------------------------------------------------------
+
+Router: GoRouter with StatefulShellRoute (preserves tab state)
+
+4 Main Tabs (Bottom Navigation):
+  1. /map        → Explore (MapPage)
+  2. /itinerary  → Journey (ItineraryPage)
+  3. /analysis   → Insights (AnalysisPage)
+  4. /wishlist   → Wishlist (WishlistPage)
+
+Bottom nav bar: Glassmorphic blur effect with animated icon transitions
+  File: lib/features/shared/presentation/shell_page.dart
+
+Router file: lib/core/router/app_router.dart
+
+
+================================================================================
+8. DEPENDENCIES
+================================================================================
+
+Core Flutter:
+  flutter_bloc: ^8.1.4      — State management (BLoC pattern)
+  go_router: ^13.0.0        — Declarative routing with shell routes
+  get_it: ^7.6.0            — Dependency injection container
+  equatable: ^2.0.5         — Value equality for entities and states
+
+Map & Geolocation:
+  flutter_map: ^6.1.0       — Interactive OpenStreetMap tiles
+  latlong2: ^0.9.0          — Latitude/longitude coordinate handling
+
+Data Processing:
+  csv: ^6.0.0               — Parse mobility CSV data
+  http: ^1.2.0              — HTTP requests to APIs
+  json_annotation: ^4.8.1   — JSON serialization annotations
+
+UI/UX:
+  shimmer: ^3.0.0           — Loading skeleton animations
+  intl: ^0.19.0             — Date/number formatting
+
+Media & Storage:
+  image_picker: ^1.0.0      — Select screenshots for AI analysis
+  video_thumbnail: ^0.5.3   — Extract frames from downloaded videos
+  path_provider: ^2.1.0     — Access temp/app directories
+  shared_preferences: ^2.5.4 — Local key-value persistence
+
+iOS Integration:
+  receive_sharing_intent: ^1.5.4 — Handle incoming share intents
+
+Dev Dependencies:
+  build_runner: ^2.4.0      — Code generation runner
+  freezed: ^2.4.6           — Immutable data classes
+  json_serializable: ^6.7.1 — JSON serialization codegen
+
+
+================================================================================
+9. FILE STRUCTURE
+================================================================================
+
+lib/
+├── main.dart                              — App entry, DI init, share handling
+├── core/
+│   ├── constants/app_constants.dart        — API keys, map defaults, thresholds
+│   ├── di/injection.dart                   — GetIt dependency registration
+│   ├── router/app_router.dart              — GoRouter setup with 4 tabs
+│   ├── theme/app_theme.dart                — Colors, gradients, typography
+│   └── services/sharing_intent_service.dart — iOS Share Extension polling
+│
+├── features/
+│   ├── wishlist/
+│   │   ├── data/
+│   │   │   ├── datasources/openai_remote_datasource.dart  — GPT-4o + Whisper
+│   │   │   └── repositories/wishlist_repository_impl.dart
+│   │   ├── domain/
+│   │   │   ├── entities/wishlist_place.dart
+│   │   │   ├── repositories/wishlist_repository.dart
+│   │   │   └── usecases/ (extract_places_from_url, _from_image, add, get, remove)
+│   │   └── presentation/
+│   │       ├── bloc/wishlist_bloc.dart
+│   │       ├── pages/ (wishlist_page, wishlist_map_page)
+│   │       └── widgets/place_analysis_sheet.dart
+│   │
+│   ├── map_view/
+│   │   ├── data/repositories/location_repository_impl.dart
+│   │   ├── domain/ (entities, repositories, usecases)
+│   │   └── presentation/ (bloc/map_bloc, pages/map_page)
+│   │
+│   ├── analysis/
+│   │   ├── data/
+│   │   │   ├── datasources/ (mobility_local, weather_remote)
+│   │   │   └── repositories/ (itinerary, mobility, weather)
+│   │   ├── domain/ (entities, repositories, usecases)
+│   │   └── presentation/
+│   │       ├── bloc/ (comfort_bloc, itinerary_bloc)
+│   │       ├── pages/ (analysis_page, itinerary_page)
+│   │       └── widgets/ (analysis_charts, recommendation_card)
+│   │
+│   ├── profile/
+│   │   └── presentation/pages/profile_page.dart
+│   │
+│   └── shared/
+│       └── presentation/shell_page.dart   — Bottom navigation shell
+│
+ios/
+├── Runner/
+│   ├── AppDelegate.swift                   — Method channel + URL scheme handler
+│   ├── Runner.entitlements                 — App Groups capability
+│   ├── Info.plist                          — URL scheme registration
+│   └── SceneDelegate.swift
+│
+├── ShareExtension/
+│   ├── ShareViewController.swift           — Share extension handler
+│   ├── ShareExtension.entitlements         — App Groups capability
+│   └── Info.plist                          — Activation rules
+│
+android/
+└── app/src/main/AndroidManifest.xml        — Share intent filter
+
+
+================================================================================
+10. KEY TECHNICAL HIGHLIGHTS
+================================================================================
+
+1. Multimodal AI Pipeline:
+   Text metadata + audio transcript + OG thumbnail + video frames → GPT-4o
+   This gives the AI a complete picture of social media content for accurate
+   place extraction.
+
+2. Multi-Strategy Web Scraping:
+   TikTok uses 5 extraction strategies (oEmbed, rehydration JSON, NEXT_DATA,
+   OG tags, meta description). Instagram uses 7 strategies (mobile/desktop UA,
+   OG tags, JSON-LD, Twitter cards, alt text, meta description).
+
+3. Video Processing Pipeline:
+   Download video → Extract 3 frames (1s, 10s, 25s) → Whisper transcription
+   → All sent to GPT-4o as a single multimodal request.
+
+4. iOS Share Extension:
+   App Group UserDefaults + custom URL scheme + polling mechanism ensures
+   reliable URL transfer between the extension and the main app.
+
+5. Crowd-Aware Itinerary Optimization:
+   Greedy algorithm analyzes 8760+ mobility records to assign optimal visit
+   times for each stop, minimizing crowd encounters.
+
+6. Weather-Crowd Correlation:
+   Combines Open-Meteo weather data with mobility patterns to generate
+   visitability scores and smart recommendations.
+
+7. Clean Architecture:
+   Strict separation of concerns with 28 use cases, 5 repositories, and
+   3 datasources — all wired through GetIt dependency injection.

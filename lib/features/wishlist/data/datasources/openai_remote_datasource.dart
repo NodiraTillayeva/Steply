@@ -1,6 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:steply/core/constants/app_constants.dart';
 import 'package:steply/features/analysis/domain/entities/place_insights.dart';
 import 'package:steply/features/wishlist/domain/entities/wishlist_place.dart';
@@ -98,20 +102,22 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
   Future<List<WishlistPlace>> extractPlacesFromUrl(String url) async {
     final lower = url.toLowerCase();
     String extractedContent;
+    List<String> videoFrames;
     String? imageUrl;
 
     if (lower.contains('tiktok.com')) {
-      extractedContent = await _fetchTikTokContent(url);
-    } else if (lower.contains('instagram.com') ||
-        lower.contains('twitter.com') ||
+      (extractedContent, videoFrames) = await _fetchTikTokContent(url);
+    } else if (lower.contains('instagram.com')) {
+      (extractedContent, videoFrames) = await _fetchInstagramContent(url);
+    } else if (lower.contains('twitter.com') ||
         lower.contains('x.com') ||
         lower.contains('facebook.com') ||
         lower.contains('threads.net') ||
         lower.contains('youtube.com') ||
         lower.contains('youtu.be')) {
-      extractedContent = await _fetchSocialMediaContent(url);
+      (extractedContent, videoFrames) = await _fetchSocialMediaContent(url);
     } else {
-      extractedContent = await _fetchWebpageContent(url);
+      (extractedContent, videoFrames) = await _fetchWebpageContent(url);
     }
 
     // Try to get a preview image from the source page
@@ -123,21 +129,53 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
       }
     } catch (_) {}
 
-    final messages = [
-      {'role': 'system', 'content': _systemPrompt},
-      {
-        'role': 'user',
-        'content':
-            'Extract places from this content (source URL: $url):\n\n$extractedContent',
-      },
-    ];
+    final userPrompt =
+        'Extract places from this content (source URL: $url):\n\n$extractedContent';
+
+    // Build multimodal message with text + OG image + video frames
+    final hasImages =
+        (imageUrl != null && imageUrl.isNotEmpty) || videoFrames.isNotEmpty;
+
+    final List<Map<String, dynamic>> messages;
+    if (hasImages) {
+      final contentParts = <Map<String, dynamic>>[
+        {'type': 'text', 'text': userPrompt},
+      ];
+      // Add OG thumbnail
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        contentParts.add({
+          'type': 'image_url',
+          'image_url': {'url': imageUrl, 'detail': 'low'},
+        });
+      }
+      // Add video frames (base64 encoded)
+      for (final frame in videoFrames) {
+        contentParts.add({
+          'type': 'image_url',
+          'image_url': {
+            'url': 'data:image/jpeg;base64,$frame',
+            'detail': 'low',
+          },
+        });
+      }
+      messages = [
+        {'role': 'system', 'content': _systemPrompt},
+        {'role': 'user', 'content': contentParts},
+      ];
+    } else {
+      messages = [
+        {'role': 'system', 'content': _systemPrompt},
+        {'role': 'user', 'content': userPrompt},
+      ];
+    }
 
     return _callOpenAi(messages, url, extractedContent, imageUrl: imageUrl);
   }
 
   /// Fetch TikTok content via oEmbed API + page HTML parsing
-  Future<String> _fetchTikTokContent(String url) async {
+  Future<(String, List<String>)> _fetchTikTokContent(String url) async {
     final parts = <String>[];
+    var videoFrames = <String>[];
 
     // 1. oEmbed API — most reliable for TikTok
     try {
@@ -221,19 +259,35 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
       }
     }
 
-    if (parts.isEmpty) {
-      // Even with no extracted content, give OpenAI the URL and
-      // ask it to use its training knowledge
-      return 'TikTok video URL: $url\n\n'
-          'I could not scrape the content from this TikTok video. '
-          'However, please analyze the URL structure for any clues '
-          '(username, video ID, hashtags in URL) and use your knowledge '
-          'to identify any places, restaurants, attractions, or venues '
-          'that might be featured. If the URL contains a username, '
-          'consider what locations that creator commonly features.';
+    // 5. Try to process video (transcribe + extract frames)
+    if (fetchedHtml != null) {
+      final videoUrl = _extractVideoUrl(fetchedHtml);
+      if (videoUrl != null) {
+        final (transcript, frames) = await _processVideo(videoUrl);
+        if (transcript != null) {
+          parts.add('VIDEO TRANSCRIPT: $transcript');
+        }
+        videoFrames = frames;
+      }
     }
 
-    return 'SOURCE: TikTok video\nURL: $url\n\n${parts.join('\n\n')}';
+    if (parts.isEmpty) {
+      return (
+        'TikTok video URL: $url\n\n'
+            'I could not scrape the content from this TikTok video. '
+            'However, please analyze the URL structure for any clues '
+            '(username, video ID, hashtags in URL) and use your knowledge '
+            'to identify any places, restaurants, attractions, or venues '
+            'that might be featured. If the URL contains a username, '
+            'consider what locations that creator commonly features.',
+        videoFrames,
+      );
+    }
+
+    return (
+      'SOURCE: TikTok video\nURL: $url\n\n${parts.join('\n\n')}',
+      videoFrames,
+    );
   }
 
   /// Extract data from TikTok's __NEXT_DATA__ script (newer format)
@@ -395,8 +449,157 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
     }
   }
 
+  /// Fetch Instagram content with enhanced parsing strategies
+  Future<(String, List<String>)> _fetchInstagramContent(String url) async {
+    final parts = <String>[];
+    var videoFrames = <String>[];
+
+    // 1. Try mobile user-agent first (Instagram serves lighter HTML)
+    String? fetchedHtml;
+    try {
+      final response =
+          await http.get(Uri.parse(url), headers: _mobileHeaders);
+      if (response.statusCode == 200) {
+        fetchedHtml = response.body;
+      }
+    } catch (_) {}
+
+    // 2. Fallback: desktop user-agent
+    if (fetchedHtml == null) {
+      try {
+        final response =
+            await http.get(Uri.parse(url), headers: _browserHeaders);
+        if (response.statusCode == 200) {
+          fetchedHtml = response.body;
+        }
+      } catch (_) {}
+    }
+
+    if (fetchedHtml != null) {
+      // OG meta tags (title, description, image, etc.)
+      final ogData = _extractOgMetaTags(fetchedHtml);
+      if (ogData.isNotEmpty) {
+        parts.add('PAGE METADATA:\n$ogData');
+      }
+
+      // Page title
+      final titleMatch =
+          RegExp(r'<title[^>]*>([^<]+)</title>', caseSensitive: false)
+              .firstMatch(fetchedHtml);
+      if (titleMatch != null) {
+        parts.add(
+            'PAGE TITLE: ${_decodeHtmlEntities(titleMatch.group(1)!)}');
+      }
+
+      // Meta description
+      final descMatch = RegExp(
+              r'<meta\s+name="description"\s+content="([^"]*)"',
+              caseSensitive: false)
+          .firstMatch(fetchedHtml);
+      if (descMatch != null) {
+        parts.add(
+            'META DESCRIPTION: ${_decodeHtmlEntities(descMatch.group(1)!)}');
+      }
+
+      // Twitter card meta tags (Instagram often includes these)
+      final twitterTitleMatch = RegExp(
+              r'<meta\s+(?:name|property)="twitter:title"\s+content="([^"]*)"',
+              caseSensitive: false)
+          .firstMatch(fetchedHtml);
+      if (twitterTitleMatch != null) {
+        final t = _decodeHtmlEntities(twitterTitleMatch.group(1)!);
+        if (t.isNotEmpty) parts.add('TWITTER TITLE: $t');
+      }
+
+      final twitterDescMatch = RegExp(
+              r'<meta\s+(?:name|property)="twitter:description"\s+content="([^"]*)"',
+              caseSensitive: false)
+          .firstMatch(fetchedHtml);
+      if (twitterDescMatch != null) {
+        final t = _decodeHtmlEntities(twitterDescMatch.group(1)!);
+        if (t.isNotEmpty) parts.add('TWITTER DESCRIPTION: $t');
+      }
+
+      // JSON-LD structured data (Instagram embeds this with author, description, etc.)
+      final jsonLdMatches = RegExp(
+        r'<script\s+type="application/ld\+json"[^>]*>(.*?)</script>',
+        caseSensitive: false,
+        dotAll: true,
+      ).allMatches(fetchedHtml);
+
+      for (final m in jsonLdMatches) {
+        try {
+          final jsonStr = m.group(1)!.trim();
+          final data = jsonDecode(jsonStr);
+          if (data is Map<String, dynamic>) {
+            final name = data['name'] as String? ?? '';
+            final desc = data['description'] as String? ?? '';
+            final author = data['author'] as Map<String, dynamic>?;
+            final authorName = author?['name'] as String? ?? '';
+            final caption = data['caption'] as String? ?? '';
+            final altDesc =
+                data['accessibilityCaption'] as String? ?? '';
+
+            if (name.isNotEmpty) parts.add('LD NAME: $name');
+            if (desc.isNotEmpty) parts.add('LD DESCRIPTION: $desc');
+            if (authorName.isNotEmpty) parts.add('LD AUTHOR: $authorName');
+            if (caption.isNotEmpty) parts.add('LD CAPTION: $caption');
+            if (altDesc.isNotEmpty) parts.add('LD ALT TEXT: $altDesc');
+          }
+        } catch (_) {}
+      }
+
+      // Image alt text (Instagram sometimes includes descriptive alt text)
+      final altMatches = RegExp(
+        r'alt="([^"]{20,})"',
+        caseSensitive: false,
+      ).allMatches(fetchedHtml);
+
+      final altTexts = <String>[];
+      for (final m in altMatches) {
+        final alt = _decodeHtmlEntities(m.group(1)!);
+        if (!alt.contains('profile picture') &&
+            !altTexts.any((a) => a == alt)) {
+          altTexts.add(alt);
+        }
+      }
+      if (altTexts.isNotEmpty) {
+        parts.add('IMAGE ALT TEXT: ${altTexts.take(3).join(' | ')}');
+      }
+
+      // Try to process video (transcribe + extract frames)
+      final videoUrl = _extractVideoUrl(fetchedHtml);
+      if (videoUrl != null) {
+        final (transcript, frames) = await _processVideo(videoUrl);
+        if (transcript != null) {
+          parts.add('VIDEO TRANSCRIPT: $transcript');
+        }
+        videoFrames = frames;
+      }
+    }
+
+    if (parts.isEmpty) {
+      return (
+        'Instagram post URL: $url\n\n'
+            'I could not scrape the content from this Instagram post. '
+            'However, please analyze the URL structure for any clues '
+            '(username, post ID, location tags) and use your knowledge '
+            'to identify any places, restaurants, attractions, or venues '
+            'that might be featured. If there is an attached image, '
+            'analyze it carefully for venue names, signage, food, '
+            'landmarks, or other location clues.',
+        videoFrames,
+      );
+    }
+
+    return (
+      'SOURCE: Instagram post\nURL: $url\n\n${parts.join('\n\n')}',
+      videoFrames,
+    );
+  }
+
   /// Fetch content from other social media via OG meta tags
-  Future<String> _fetchSocialMediaContent(String url) async {
+  Future<(String, List<String>)> _fetchSocialMediaContent(String url) async {
     final parts = <String>[];
 
     try {
@@ -431,13 +634,16 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
     }
 
     if (parts.isEmpty) {
-      return 'Social media URL: $url\n'
-          'Could not fetch content directly. '
-          'Please extract any places based on your knowledge of this URL, '
-          'including any location hints in the URL itself.';
+      return (
+        'Social media URL: $url\n'
+            'Could not fetch content directly. '
+            'Please extract any places based on your knowledge of this URL, '
+            'including any location hints in the URL itself.',
+        <String>[],
+      );
     }
 
-    return parts.join('\n\n');
+    return (parts.join('\n\n'), <String>[]);
   }
 
   /// Extract Open Graph meta tags from HTML
@@ -466,7 +672,7 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
   }
 
   /// Fetch regular webpage HTML
-  Future<String> _fetchWebpageContent(String url) async {
+  Future<(String, List<String>)> _fetchWebpageContent(String url) async {
     final response =
         await http.get(Uri.parse(url), headers: _browserHeaders);
     if (response.statusCode != 200) {
@@ -477,7 +683,7 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
     if (content.length > _maxContentChars) {
       content = content.substring(0, _maxContentChars);
     }
-    return content;
+    return (content, <String>[]);
   }
 
   String _decodeHtmlEntities(String text) {
@@ -489,6 +695,135 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
         .replaceAll('&#39;', "'")
         .replaceAll('&#x27;', "'")
         .replaceAll('&apos;', "'");
+  }
+
+  /// Extract video download URL from HTML metadata
+  String? _extractVideoUrl(String html) {
+    // 1. Check og:video meta tags (works for Instagram, some others)
+    for (final attr in ['og:video', 'og:video:url', 'og:video:secure_url']) {
+      final regex = RegExp(
+        '<meta\\s+(?:property|name)="$attr"\\s+content="([^"]*)"',
+        caseSensitive: false,
+      );
+      final regex2 = RegExp(
+        '<meta\\s+content="([^"]*)"\\s+(?:property|name)="$attr"',
+        caseSensitive: false,
+      );
+      final match = regex.firstMatch(html) ?? regex2.firstMatch(html);
+      if (match != null) {
+        final url = _decodeHtmlEntities(match.group(1)!);
+        if (url.isNotEmpty && url.startsWith('http')) return url;
+      }
+    }
+
+    // 2. TikTok: try __UNIVERSAL_DATA_FOR_REHYDRATION__ JSON → video playAddr
+    try {
+      const marker = '__UNIVERSAL_DATA_FOR_REHYDRATION__';
+      final scriptStart = html.indexOf(marker);
+      if (scriptStart != -1) {
+        final jsonStart = html.indexOf('>', scriptStart);
+        final jsonEnd = html.indexOf('</script>', jsonStart);
+        if (jsonStart != -1 && jsonEnd != -1) {
+          final jsonStr = html.substring(jsonStart + 1, jsonEnd).trim();
+          final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+          final itemStruct = data['__DEFAULT_SCOPE__']
+              ?['webapp.video-detail']?['itemInfo']?['itemStruct'];
+          if (itemStruct != null) {
+            final video = itemStruct['video'] as Map<String, dynamic>?;
+            final playAddr = video?['playAddr'] as String?;
+            if (playAddr != null && playAddr.isNotEmpty) return playAddr;
+            final downloadAddr = video?['downloadAddr'] as String?;
+            if (downloadAddr != null && downloadAddr.isNotEmpty) {
+              return downloadAddr;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  /// Download video, extract key frames, and transcribe audio
+  Future<(String? transcript, List<String> frameBase64s)> _processVideo(
+      String videoUrl) async {
+    File? tempFile;
+    try {
+      // Download video to temp file
+      final dir = await getTemporaryDirectory();
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      tempFile = File('${dir.path}/steply_video_$ts.mp4');
+
+      final request = await HttpClient().getUrl(Uri.parse(videoUrl));
+      request.headers.set('User-Agent', _mobileHeaders['User-Agent']!);
+      final response = await request.close();
+
+      if (response.statusCode != 200) return (null, <String>[]);
+
+      final contentLength = response.contentLength;
+      if (contentLength > 25 * 1024 * 1024) return (null, <String>[]);
+
+      final sink = tempFile.openWrite();
+      await response.pipe(sink);
+      await sink.close();
+
+      final fileSize = await tempFile.length();
+      if (fileSize > 25 * 1024 * 1024 || fileSize < 1000) {
+        return (null, <String>[]);
+      }
+
+      // Extract key frames at different timestamps
+      final frameBase64s = <String>[];
+      for (final ms in [1000, 10000, 25000]) {
+        try {
+          final Uint8List? frame = await VideoThumbnail.thumbnailData(
+            video: tempFile.path,
+            imageFormat: ImageFormat.JPEG,
+            maxWidth: 512,
+            quality: 60,
+            timeMs: ms,
+          );
+          if (frame != null && frame.isNotEmpty) {
+            frameBase64s.add(base64Encode(frame));
+          }
+        } catch (_) {}
+      }
+      print('🎬 [Video] Extracted ${frameBase64s.length} frames');
+
+      // Transcribe audio via Whisper
+      String? transcript;
+      try {
+        final uri =
+            Uri.parse('https://api.openai.com/v1/audio/transcriptions');
+        final multipart = http.MultipartRequest('POST', uri);
+        multipart.headers['Authorization'] =
+            'Bearer ${AppStrings.openAiApiKey}';
+        multipart.fields['model'] = 'whisper-1';
+        multipart.files.add(
+          await http.MultipartFile.fromPath('file', tempFile.path),
+        );
+
+        final whisperResponse = await multipart.send();
+        final body = await whisperResponse.stream.bytesToString();
+
+        if (whisperResponse.statusCode == 200) {
+          final json = jsonDecode(body) as Map<String, dynamic>;
+          final text = json['text'] as String? ?? '';
+          if (text.isNotEmpty) transcript = text;
+        }
+      } catch (e) {
+        print('🎙️ [Whisper] Transcription failed: $e');
+      }
+
+      return (transcript, frameBase64s);
+    } catch (e) {
+      print('🎬 [Video] Processing failed: $e');
+      return (null, <String>[]);
+    } finally {
+      try {
+        await tempFile?.delete();
+      } catch (_) {}
+    }
   }
 
   @override
@@ -618,17 +953,18 @@ Be detailed and authentic. A good insight reads like advice from a local friend,
 
     String textContent;
     if (lower.contains('tiktok.com')) {
-      textContent = await _fetchTikTokContent(url);
-    } else if (lower.contains('instagram.com') ||
-        lower.contains('twitter.com') ||
+      (textContent, _) = await _fetchTikTokContent(url);
+    } else if (lower.contains('instagram.com')) {
+      (textContent, _) = await _fetchInstagramContent(url);
+    } else if (lower.contains('twitter.com') ||
         lower.contains('x.com') ||
         lower.contains('facebook.com') ||
         lower.contains('threads.net') ||
         lower.contains('youtube.com') ||
         lower.contains('youtu.be')) {
-      textContent = await _fetchSocialMediaContent(url);
+      (textContent, _) = await _fetchSocialMediaContent(url);
     } else {
-      textContent = await _fetchWebpageContent(url);
+      (textContent, _) = await _fetchWebpageContent(url);
     }
 
     return (textContent, imageUrl);

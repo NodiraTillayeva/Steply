@@ -1,95 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:steply/core/design_system/colors.dart';
 import 'package:steply/core/constants/app_constants.dart';
 
 class AppTheme {
   AppTheme._();
 
-  // ─── Typography Scale (Modern, Clean) ───
+  // ─── Typography Scale ───
 
   static TextTheme get _textTheme => const TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.8,
-          height: 1.15,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.5,
+          height: 1.2,
         ),
         displayMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w700,
-          letterSpacing: -0.6,
+          letterSpacing: -0.3,
           height: 1.2,
         ),
         headlineLarge: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
-          height: 1.25,
+          letterSpacing: -0.3,
+          height: 1.3,
         ),
         headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.4,
+          letterSpacing: -0.2,
           height: 1.3,
         ),
         headlineSmall: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.3,
+          letterSpacing: -0.2,
           height: 1.3,
         ),
         titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.3,
-          height: 1.3,
-        ),
-        titleMedium: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
+          letterSpacing: -0.1,
+          height: 1.4,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
           height: 1.4,
         ),
         titleSmall: TextStyle(
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.0,
           height: 1.4,
         ),
         bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          letterSpacing: 0.0,
-          height: 1.55,
+          height: 1.5,
         ),
         bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w400,
-          letterSpacing: 0.0,
           height: 1.5,
         ),
         bodySmall: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w400,
           letterSpacing: 0.1,
-          height: 1.4,
+          height: 1.5,
         ),
         labelLarge: TextStyle(
           fontSize: 14,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.1,
           height: 1.4,
         ),
         labelMedium: TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          height: 1.3,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.2,
+          height: 1.4,
         ),
         labelSmall: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
-          letterSpacing: 0.4,
-          height: 1.3,
+          letterSpacing: 0.3,
+          height: 1.4,
         ),
       );
 
@@ -97,61 +94,62 @@ class AppTheme {
 
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+      seedColor: SteplyColors.greenDark,
       brightness: Brightness.light,
-      primary: AppColors.primary,
-      secondary: AppColors.accent,
-      surface: AppColors.surfaceLight,
-      error: AppColors.error,
+      primary: SteplyColors.greenDark,
+      secondary: SteplyColors.orangePrimary,
+      tertiary: SteplyColors.orangeMedium,
+      surface: SteplyColors.warmWhite,
+      error: SteplyColors.error,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.bgLight,
+      scaffoldBackgroundColor: SteplyColors.warmWhite,
       textTheme: _textTheme.apply(
-        bodyColor: AppColors.textPrimary,
-        displayColor: AppColors.textPrimary,
+        bodyColor: SteplyColors.textDark,
+        displayColor: SteplyColors.textDark,
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: AppColors.bgLight,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: Colors.transparent,
+        foregroundColor: SteplyColors.textDark,
         titleTextStyle: _textTheme.headlineMedium?.copyWith(
-          color: AppColors.textPrimary,
+          color: SteplyColors.textDark,
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surfaceLight,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textTertiary,
+        backgroundColor: SteplyColors.cloudWhite,
+        selectedItemColor: SteplyColors.greenDark,
+        unselectedItemColor: SteplyColors.textLight,
         showSelectedLabels: true,
         showUnselectedLabels: true,
         elevation: 0,
         selectedLabelStyle: _textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+          color: SteplyColors.greenDark,
         ),
         unselectedLabelStyle: _textTheme.labelSmall?.copyWith(
-          color: AppColors.textTertiary,
+          color: SteplyColors.textLight,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: AppColors.surfaceLight,
+        color: SteplyColors.cloudWhite,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.xxl),
-          side: BorderSide(color: Colors.black.withOpacity(0.04)),
+          side: BorderSide(color: SteplyColors.divider.withOpacity(0.5)),
         ),
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: SteplyColors.orangePrimary,
+        foregroundColor: SteplyColors.textDark,
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -159,7 +157,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: SteplyColors.greenDark,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -171,7 +169,7 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: SteplyColors.greenDark,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -182,54 +180,54 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: SteplyColors.greenDark,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+          side: BorderSide(color: SteplyColors.greenDark.withOpacity(0.3)),
           textStyle: _textTheme.labelLarge,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: SteplyColors.greenDark,
           textStyle: _textTheme.labelLarge,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: Colors.black.withOpacity(0.08)),
+          borderSide: BorderSide(color: SteplyColors.divider),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: Colors.black.withOpacity(0.08)),
+          borderSide: BorderSide(color: SteplyColors.divider),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: const BorderSide(color: SteplyColors.greenDark, width: 1.5),
         ),
         filled: true,
-        fillColor: AppColors.surfaceLight,
+        fillColor: SteplyColors.cloudWhite,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.md,
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.primaryLight,
-        labelStyle: _textTheme.labelMedium?.copyWith(color: AppColors.primary),
+        backgroundColor: SteplyColors.greenLight.withOpacity(0.15),
+        labelStyle: _textTheme.labelMedium?.copyWith(color: SteplyColors.greenDark),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.full),
         ),
         side: BorderSide.none,
         padding: const EdgeInsets.symmetric(horizontal: 4),
       ),
-      dividerTheme: DividerThemeData(
+      dividerTheme: const DividerThemeData(
         space: 1,
         thickness: 1,
-        color: Colors.black.withOpacity(0.05),
+        color: SteplyColors.divider,
       ),
       listTileTheme: const ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(
@@ -238,13 +236,13 @@ class AppTheme {
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: AppColors.surfaceLight,
+        backgroundColor: SteplyColors.warmWhite,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.xxl),
           ),
         ),
-        dragHandleColor: Colors.black.withOpacity(0.1),
+        dragHandleColor: SteplyColors.divider,
         dragHandleSize: const Size(40, 4),
         showDragHandle: true,
       ),
@@ -253,7 +251,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.xxl),
         ),
         titleTextStyle: _textTheme.headlineSmall?.copyWith(
-          color: AppColors.textPrimary,
+          color: SteplyColors.textDark,
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -261,11 +259,17 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
-        backgroundColor: AppColors.textPrimary,
+        backgroundColor: SteplyColors.textDark,
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
-        linearTrackColor: AppColors.primaryLight,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: SteplyColors.greenDark,
+        linearTrackColor: SteplyColors.greenLight.withOpacity(0.2),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: SteplyColors.greenDark,
+        unselectedLabelColor: SteplyColors.textLight,
+        indicatorColor: SteplyColors.orangePrimary,
+        indicatorSize: TabBarIndicatorSize.label,
       ),
     );
   }
@@ -274,37 +278,37 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+      seedColor: SteplyColors.greenDark,
       brightness: Brightness.dark,
-      primary: const Color(0xFF7B93FF),
-      secondary: const Color(0xFF5EEAD4),
-      surface: AppColors.surfaceDark,
-      error: const Color(0xFFFF6B6B),
+      primary: SteplyColors.greenLight,
+      secondary: SteplyColors.orangePrimary,
+      surface: const Color(0xFF1E2D1E),
+      error: SteplyColors.error,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.bgDark,
+      scaffoldBackgroundColor: const Color(0xFF121A12),
       textTheme: _textTheme.apply(
-        bodyColor: const Color(0xFFE2E8F0),
-        displayColor: const Color(0xFFE2E8F0),
+        bodyColor: const Color(0xFFD4E4D4),
+        displayColor: const Color(0xFFD4E4D4),
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: const Color(0xFFE2E8F0),
+        backgroundColor: const Color(0xFF121A12),
+        foregroundColor: const Color(0xFFD4E4D4),
         titleTextStyle: _textTheme.headlineMedium?.copyWith(
-          color: const Color(0xFFE2E8F0),
+          color: const Color(0xFFD4E4D4),
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surfaceDark,
-        selectedItemColor: const Color(0xFF7B93FF),
-        unselectedItemColor: const Color(0xFF64748B),
+        backgroundColor: const Color(0xFF1E2D1E),
+        selectedItemColor: SteplyColors.greenLight,
+        unselectedItemColor: const Color(0xFF5A6B5A),
         showSelectedLabels: true,
         showUnselectedLabels: true,
         elevation: 0,
@@ -315,7 +319,7 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: AppColors.surfaceDark,
+        color: const Color(0xFF1E2D1E),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.xxl),
           side: BorderSide(color: Colors.white.withOpacity(0.06)),
@@ -324,8 +328,8 @@ class AppTheme {
         margin: EdgeInsets.zero,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: const Color(0xFF7B93FF),
-        foregroundColor: Colors.white,
+        backgroundColor: SteplyColors.orangePrimary,
+        foregroundColor: SteplyColors.textDark,
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -333,8 +337,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF7B93FF),
-          foregroundColor: Colors.white,
+          backgroundColor: SteplyColors.greenLight,
+          foregroundColor: const Color(0xFF121A12),
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -349,14 +353,14 @@ class AppTheme {
           borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
         ),
         filled: true,
-        fillColor: AppColors.surfaceDark,
+        fillColor: const Color(0xFF1E2D1E),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.md,
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: const Color(0xFF1E2D1E),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.xxl),
@@ -370,7 +374,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.xxl),
         ),
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: const Color(0xFF1E2D1E),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -379,7 +383,7 @@ class AppTheme {
         ),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: Color(0xFF7B93FF),
+        color: SteplyColors.greenLight,
       ),
     );
   }

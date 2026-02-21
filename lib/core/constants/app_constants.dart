@@ -66,16 +66,16 @@ class AppRadius {
 class AppColors {
   AppColors._();
 
-  // Primary — Deep Indigo
-  static const Color primary = Color(0xFF3D5AF1);
-  static const Color primaryDark = Color(0xFF2A3EB1);
-  static const Color primaryLight = Color(0xFFE8EBFF);
-  static const Color primarySoft = Color(0xFFF0F2FF);
+  // Primary — Forest Green (Brand)
+  static const Color primary = Color(0xFF3E6C24);
+  static const Color primaryDark = Color(0xFF2D5019);
+  static const Color primaryLight = Color(0xFFE8F0E2);
+  static const Color primarySoft = Color(0xFFF2F7EE);
 
-  // Accent — Warm Teal (AI intelligence)
-  static const Color accent = Color(0xFF14B8A6);
-  static const Color accentLight = Color(0xFFCCFBF1);
-  static const Color accentSoft = Color(0xFFF0FDFA);
+  // Accent — Warm Orange (Brand)
+  static const Color accent = Color(0xFFFFC87B);
+  static const Color accentLight = Color(0xFFFFF3E0);
+  static const Color accentSoft = Color(0xFFFFF9F0);
 
   // Coral — Warm emphasis
   static const Color coral = Color(0xFFFF6B6B);
@@ -89,12 +89,12 @@ class AppColors {
   static const Color amber = Color(0xFFF59E0B);
   static const Color amberLight = Color(0xFFFEF3C7);
 
-  // Backgrounds — Warm, not flat
-  static const Color bgLight = Color(0xFFF8F9FE);
-  static const Color bgDark = Color(0xFF111827);
-  static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color surfaceDark = Color(0xFF1E293B);
-  static const Color surfaceElevated = Color(0xFFFCFCFF);
+  // Backgrounds — Warm, natural
+  static const Color bgLight = Color(0xFFF9FAFE);
+  static const Color bgDark = Color(0xFF121A12);
+  static const Color surfaceLight = Color(0xFFEBE8E1);
+  static const Color surfaceDark = Color(0xFF1E2D1E);
+  static const Color surfaceElevated = Color(0xFFF5F3EE);
 
   // Glass effects
   static const Color glassWhite = Color(0xCCFFFFFF); // 80% white
@@ -103,9 +103,9 @@ class AppColors {
   static const Color glassDark = Color(0x331A2035);
 
   // Text hierarchy
-  static const Color textPrimary = Color(0xFF1A1D26);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textTertiary = Color(0xFF9CA3AF);
+  static const Color textPrimary = Color(0xFF2D3B2D);
+  static const Color textSecondary = Color(0xFF5A6B5A);
+  static const Color textTertiary = Color(0xFF8A9B8A);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
   // Comfort index
@@ -113,12 +113,12 @@ class AppColors {
   static const Color mediumComfort = Color(0xFFF59E0B);
   static const Color highComfort = Color(0xFF10B981);
 
-  // Heatmap gradient (softer, less harsh)
+  // Heatmap gradient (natural green to warm)
   static const List<Color> heatmapGradient = [
     Color(0x00FFFFFF),
-    Color(0x3014B8A6),
-    Color(0x50F59E0B),
-    Color(0x70FF6B6B),
+    Color(0x30557B30),
+    Color(0x50FFC87B),
+    Color(0x70F59E0B),
     Color(0x90EF4444),
   ];
 
@@ -128,9 +128,9 @@ class AppColors {
   static const Color poiShopping = Color(0xFF06B6D4);
   static const Color poiTransport = Color(0xFF64748B);
 
-  // Wishlist / Saved
-  static const Color wishlistMarker = Color(0xFFEC4899);
-  static const Color saved = Color(0xFFEC4899);
+  // Wishlist / Saved — Orange brand color
+  static const Color wishlistMarker = Color(0xFFE5A869);
+  static const Color saved = Color(0xFFE5A869);
 
   // OpenAI
   static const Color openAi = Color(0xFF10A37F);
@@ -151,7 +151,7 @@ class AppColors {
 
   // Insights
   static const Color insightVibe = Color(0xFF8B5CF6);
-  static const Color insightTip = Color(0xFF14B8A6);
+  static const Color insightTip = Color(0xFF3E6C24);
   static const Color insightHighlight = Color(0xFFF97316);
   static const Color insightCaveat = Color(0xFFEF4444);
   static const Color seasonalBest = Color(0xFF10B981);
@@ -161,50 +161,51 @@ class AppColors {
   static const Color statusBusy = Color(0xFFEF4444);
 
   // Neutral
-  static const Color surface = Color(0xFFF8F9FE);
-  static const Color background = Color(0xFFFFFFFF);
-  static const Color error = Color(0xFFDC2626);
+  static const Color surface = Color(0xFFEBE8E1);
+  static const Color background = Color(0xFFF9FAFE);
+  static const Color error = Color(0xFFF8534D);
+  static const Color divider = Color(0xFFD8D5CE);
 
   // ─── Premium Gradients ───
 
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF3D5AF1), Color(0xFF6366F1)],
+    colors: [Color(0xFF557B30), Color(0xFF3E6C24)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+    colors: [Color(0xFFFECC87), Color(0xFFFFC87B), Color(0xFFE7B167)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient coralGradient = LinearGradient(
-    colors: [Color(0xFFFF6B6B), Color(0xFFF97316)],
+    colors: [Color(0xFFFFC87B), Color(0xFFE7B167)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient emeraldGradient = LinearGradient(
-    colors: [Color(0xFF10B981), Color(0xFF06B6D4)],
+    colors: [Color(0xFF10B981), Color(0xFF3E6C24)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient surfaceGradient = LinearGradient(
-    colors: [Color(0xFFF8F9FE), Color(0xFFF0F2FF)],
+    colors: [Color(0xFFEBE8E1), Color(0xFFF5F3EE)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient warmBgGradient = LinearGradient(
-    colors: [Color(0xFFF8F9FE), Color(0xFFFFF7ED)],
+    colors: [Color(0xFFF9FAFE), Color(0xFFFFF7ED)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient darkBgGradient = LinearGradient(
-    colors: [Color(0xFF111827), Color(0xFF1E293B)],
+    colors: [Color(0xFF121A12), Color(0xFF1E2D1E)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -277,12 +278,12 @@ class AppStrings {
   static const String appTagline = 'Your AI Travel Companion';
 
   // Navigation
-  static const String navMap = 'Explore';
-  static const String navItinerary = 'Journey';
-  static const String navAnalysis = 'Insights';
-  static const String navWishlist = 'Wishlist';
+  static const String navMap = 'Home';
+  static const String navItinerary = 'My Trip';
+  static const String navAnalysis = 'Discover';
+  static const String navWishlist = 'Saved';
   static const String navExplore = 'Explore';
-  static const String navInsights = 'Insights';
+  static const String navInsights = 'Discover';
   static const String navProfile = 'Profile';
 
   // Map
@@ -292,7 +293,7 @@ class AppStrings {
   static const String mapSearch = 'Search places in Nagoya...';
 
   // Itinerary
-  static const String itineraryTitle = 'Your Journey';
+  static const String itineraryTitle = 'My Trip';
   static const String itineraryEmpty = 'Your journey starts here.';
   static const String itineraryEmptySub =
       'Add your first place and we\'ll optimize it for you.';
@@ -317,7 +318,7 @@ class AppStrings {
   static const String comfortHigh = 'Comfortable';
 
   // Insights
-  static const String insightsTitle = 'City Intelligence';
+  static const String insightsTitle = 'Discover';
   static const String crowdIntelligence = 'Crowd Intelligence';
   static const String temporalPatterns = 'Temporal Patterns';
   static const String weatherCorrelation = 'Weather & Movement';
@@ -335,7 +336,7 @@ class AppStrings {
 
   // OpenAI
   static const String openAiApiKey =
-      '';
+      String.fromEnvironment('OPENAI_API_KEY', defaultValue: '');
 
   // Place Analysis Sheet
   static const String analysisRightNow = 'Right Now';

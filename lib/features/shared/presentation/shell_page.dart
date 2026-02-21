@@ -1,7 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:steply/core/constants/app_constants.dart';
+import 'package:steply/core/design_system/components/steply_bottom_nav.dart';
 
 class ShellPage extends StatelessWidget {
   final int currentIndex;
@@ -16,10 +15,26 @@ class ShellPage extends StatelessWidget {
   });
 
   static const _items = [
-    _NavItem(icon: Icons.explore_outlined, activeIcon: Icons.explore, label: 'Explore'),
-    _NavItem(icon: Icons.route_outlined, activeIcon: Icons.route, label: 'Journey'),
-    _NavItem(icon: Icons.insights_outlined, activeIcon: Icons.insights, label: 'Insights'),
-    _NavItem(icon: Icons.favorite_outline, activeIcon: Icons.favorite, label: 'Wishlist'),
+    SteplyNavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      label: 'Home',
+    ),
+    SteplyNavItem(
+      icon: Icons.route_outlined,
+      activeIcon: Icons.route,
+      label: 'My Trip',
+    ),
+    SteplyNavItem(
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore,
+      label: 'Discover',
+    ),
+    SteplyNavItem(
+      icon: Icons.bookmark_outline,
+      activeIcon: Icons.bookmark,
+      label: 'Saved',
+    ),
   ];
 
   @override
@@ -46,104 +61,11 @@ class ShellPage extends StatelessWidget {
         },
         child: child,
       ),
-      bottomNavigationBar: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surfaceLight.withOpacity(0.92),
-              border: Border(
-                top: BorderSide(
-                  color: Colors.black.withOpacity(0.04),
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                child: Row(
-                  children: List.generate(_items.length, (index) {
-                    final item = _items[index];
-                    final isSelected = currentIndex == index;
-
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => onTabChanged(index),
-                        behavior: HitTestBehavior.opaque,
-                        child: AnimatedContainer(
-                          duration: AppConstants.mediumAnimation,
-                          curve: Curves.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AnimatedContainer(
-                                duration: AppConstants.mediumAnimation,
-                                curve: Curves.easeOutCubic,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: isSelected ? 16 : 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary.withOpacity(0.1)
-                                      : Colors.transparent,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.full),
-                                ),
-                                child: AnimatedSwitcher(
-                                  duration: AppConstants.shortAnimation,
-                                  child: Icon(
-                                    isSelected ? item.activeIcon : item.icon,
-                                    key: ValueKey(isSelected),
-                                    size: isSelected ? 24 : 22,
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.textTertiary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              AnimatedDefaultTextStyle(
-                                duration: AppConstants.shortAnimation,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.textTertiary,
-                                  letterSpacing: 0.1,
-                                ),
-                                child: Text(item.label),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ),
-          ),
-        ),
+      bottomNavigationBar: SteplyBottomNav(
+        currentIndex: currentIndex,
+        onTap: onTabChanged,
+        items: _items,
       ),
     );
   }
-}
-
-class _NavItem {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-  });
 }

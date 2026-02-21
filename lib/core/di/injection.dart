@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:steply/core/services/sharing_intent_service.dart';
 import 'package:steply/features/analysis/data/datasources/mobility_local_datasource.dart';
 import 'package:steply/features/analysis/data/datasources/weather_remote_datasource.dart';
 import 'package:steply/features/analysis/data/repositories/itinerary_repository_impl.dart';
@@ -160,5 +161,10 @@ Future<void> configureDependencies() async {
       extractPlacesFromImage: getIt(),
       removeWishlistPlace: getIt(),
     ),
+  );
+
+  // Sharing intent service
+  getIt.registerLazySingleton<SharingIntentService>(
+    () => SharingIntentService(),
   );
 }
