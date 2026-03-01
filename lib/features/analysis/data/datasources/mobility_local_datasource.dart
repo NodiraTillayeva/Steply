@@ -12,6 +12,7 @@ abstract class MobilityLocalDatasource {
   Future<List<PopularArea>> getPrecomputedPopularAreas();
   Future<TemporalAnalysis> getPrecomputedTemporalAnalysis();
   Future<List<Map<String, dynamic>>> getPrecomputedMonthlyTrends();
+  Future<int> getTotalRecordCount();
 }
 
 class MobilityLocalDatasourceImpl implements MobilityLocalDatasource {
@@ -31,6 +32,13 @@ class MobilityLocalDatasourceImpl implements MobilityLocalDatasource {
     // Raw data is no longer bundled (210M rows too large).
     // All analytics come from pre-computed JSON.
     return [];
+  }
+
+  @override
+  Future<int> getTotalRecordCount() async {
+    final data = await _loadJson();
+    final metadata = data['metadata'] as Map<String, dynamic>?;
+    return metadata?['totalRecords'] as int? ?? 0;
   }
 
   @override

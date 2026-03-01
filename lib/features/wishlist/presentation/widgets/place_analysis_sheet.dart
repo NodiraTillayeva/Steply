@@ -9,7 +9,7 @@ import 'package:steply/features/analysis/domain/entities/place_insights.dart';
 import 'package:steply/features/analysis/domain/entities/weather_data.dart';
 import 'package:steply/features/analysis/domain/repositories/mobility_repository.dart';
 import 'package:steply/features/analysis/domain/repositories/weather_repository.dart';
-import 'package:steply/features/wishlist/data/datasources/openai_remote_datasource.dart';
+import 'package:steply/features/wishlist/data/datasources/gemini_remote_datasource.dart';
 
 class PlaceAnalysisSheet extends StatefulWidget {
   final String name;
@@ -68,7 +68,7 @@ class _PlaceAnalysisSheetState extends State<PlaceAnalysisSheet> {
 
   void _loadInsights() {
     setState(() {
-      _insightsFuture = getIt<OpenAiRemoteDatasource>().getPlaceInsights(
+      _insightsFuture = getIt<GeminiRemoteDatasource>().getPlaceInsights(
         placeName: widget.name,
         sourceUrl: widget.sourceUrl,
         rawContent: widget.rawSourceContent,

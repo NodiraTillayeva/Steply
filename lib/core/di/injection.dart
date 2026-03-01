@@ -22,7 +22,7 @@ import 'package:steply/features/map_view/domain/repositories/location_repository
 import 'package:steply/features/map_view/domain/usecases/get_heatmap_data.dart';
 import 'package:steply/features/map_view/domain/usecases/get_pois.dart';
 import 'package:steply/features/map_view/presentation/bloc/map_bloc.dart';
-import 'package:steply/features/wishlist/data/datasources/openai_remote_datasource.dart';
+import 'package:steply/features/wishlist/data/datasources/gemini_remote_datasource.dart';
 import 'package:steply/features/wishlist/data/repositories/wishlist_repository_impl.dart';
 import 'package:steply/features/wishlist/domain/repositories/wishlist_repository.dart';
 import 'package:steply/features/wishlist/domain/usecases/add_wishlist_place.dart';
@@ -126,8 +126,8 @@ Future<void> configureDependencies() async {
   );
 
   // Wishlist feature
-  getIt.registerLazySingleton<OpenAiRemoteDatasource>(
-    () => OpenAiRemoteDatasourceImpl(),
+  getIt.registerLazySingleton<GeminiRemoteDatasource>(
+    () => GeminiRemoteDatasourceImpl(),
   );
 
   getIt.registerLazySingleton<WishlistRepository>(

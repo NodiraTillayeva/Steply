@@ -5,6 +5,8 @@ import 'package:steply/core/constants/app_constants.dart';
 import 'package:steply/features/analysis/domain/entities/itinerary.dart';
 import 'package:steply/features/analysis/presentation/bloc/itinerary_bloc.dart';
 import 'package:steply/features/map_view/domain/entities/poi.dart';
+import 'package:steply/features/wishlist/domain/entities/wishlist_place.dart';
+import 'package:steply/features/wishlist/presentation/bloc/wishlist_bloc.dart';
 
 class ItineraryPage extends StatefulWidget {
   const ItineraryPage({super.key});
@@ -21,13 +23,19 @@ class _ItineraryPageState extends State<ItineraryPage> {
   }
 
   void _showAddStopSheet(BuildContext context, List<Poi> pois) {
+    // Get wishlist places from WishlistBloc
+    final wishlistState = context.read<WishlistBloc>().state;
+    final wishlistPlaces = wishlistState is WishlistLoaded
+        ? wishlistState.places
+        : <WishlistPlace>[];
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.65,
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
@@ -53,58 +61,164 @@ class _ItineraryPageState extends State<ItineraryPage> {
               ),
             ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                itemCount: pois.length,
-                separatorBuilder: (_, __) =>
+              child: ListView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                children: [
+                  // Saved Places section
+                  if (wishlistPlaces.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          left: 4, bottom: AppSpacing.sm),
+                      child: Row(
+                        children: [
+                          Icon(Icons.bookmark,
+                              size: 16, color: AppColors.wishlistMarker),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Saved Places',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ...wishlistPlaces.map((place) => Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.lg),
+                              border: Border.all(
+                                  color: Colors.black.withOpacity(0.04)),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md, vertical: 4),
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.wishlistMarker
+                                      .withOpacity(0.1),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                child: Icon(
+                                  Icons.favorite,
+                                  color: AppColors.wishlistMarker,
+                                  size: 20,
+                                ),
+                              ),
+                              title: Text(place.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall),
+                              subtitle: Text(
+                                place.description,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                        color: AppColors.textTertiary),
+                              ),
+                              trailing: Icon(Icons.add_circle_outline,
+                                  color: AppColors.primary, size: 22),
+                              onTap: () {
+                                context.read<ItineraryBloc>().add(
+                                      AddStopByDetails(
+                                        name: place.name,
+                                        lat: place.latitude,
+                                        lng: place.longitude,
+                                      ),
+                                    );
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ),
+                        )),
                     const SizedBox(height: AppSpacing.sm),
-                itemBuilder: (ctx, index) {
-                  final poi = pois[index];
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      border:
-                          Border.all(color: Colors.black.withOpacity(0.04)),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md, vertical: 4),
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color:
-                              _categoryColor(poi.category).withOpacity(0.1),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Icon(
-                          _categoryIcon(poi.category),
-                          color: _categoryColor(poi.category),
-                          size: 20,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          left: 4, bottom: AppSpacing.sm),
+                      child: Row(
+                        children: [
+                          Icon(Icons.explore,
+                              size: 16, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Popular Places',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      title: Text(poi.name,
-                          style: Theme.of(context).textTheme.titleSmall),
-                      subtitle: Text(
-                        poi.category.name,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: AppColors.textTertiary),
-                      ),
-                      trailing: Icon(Icons.add_circle_outline,
-                          color: AppColors.primary, size: 22),
-                      onTap: () {
-                        context.read<ItineraryBloc>().add(AddStop(poi));
-                        Navigator.pop(ctx);
-                      },
                     ),
-                  );
-                },
+                  ],
+                  // POI section
+                  ...pois.map((poi) => Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.lg),
+                            border: Border.all(
+                                color: Colors.black.withOpacity(0.04)),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md, vertical: 4),
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _categoryColor(poi.category)
+                                    .withOpacity(0.1),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: Icon(
+                                _categoryIcon(poi.category),
+                                color: _categoryColor(poi.category),
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(poi.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall),
+                            subtitle: Text(
+                              poi.category.name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: AppColors.textTertiary),
+                            ),
+                            trailing: Icon(Icons.add_circle_outline,
+                                color: AppColors.primary, size: 22),
+                            onTap: () {
+                              context
+                                  .read<ItineraryBloc>()
+                                  .add(AddStop(poi));
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                      )),
+                  const SizedBox(height: AppSpacing.md),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
           ],
         ),
       ),
@@ -304,7 +418,14 @@ class _ItineraryPageState extends State<ItineraryPage> {
   }
 
   String _formatVisitTime(DateTime time) {
-    return DateFormat('h:mm a').format(time);
+    final now = DateTime.now();
+    final isToday = time.year == now.year &&
+        time.month == now.month &&
+        time.day == now.day;
+    if (isToday) {
+      return 'Today ${DateFormat('h:mm a').format(time)}';
+    }
+    return DateFormat('MMM d, h:mm a').format(time);
   }
 
   // ─── Empty State: Plan a Trip ───
@@ -331,7 +452,17 @@ class _ItineraryPageState extends State<ItineraryPage> {
             const SizedBox(height: AppSpacing.xl),
             Text(
               AppStrings.planATrip,
-              style: Theme.of(context).textTheme.headlineLarge,
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -503,7 +634,14 @@ class _ItineraryPageState extends State<ItineraryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppStrings.itineraryTitle),
+        title: Text(
+          AppStrings.itineraryTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.2,
+          ),
+        ),
       ),
       body: BlocConsumer<ItineraryBloc, ItineraryState>(
         listener: (context, state) {
@@ -596,7 +734,11 @@ class _ItineraryPageState extends State<ItineraryPage> {
                               AppStrings.itineraryEmpty,
                               style: Theme.of(context)
                                   .textTheme
-                                  .titleMedium,
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(

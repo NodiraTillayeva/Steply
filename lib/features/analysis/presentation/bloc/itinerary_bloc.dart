@@ -70,6 +70,8 @@ class SelectTripDates extends ItineraryEvent {
   List<Object?> get props => [startDate, endDate];
 }
 
+class ResetTrip extends ItineraryEvent {}
+
 class OrganizeItinerary extends ItineraryEvent {}
 
 // States
@@ -150,15 +152,34 @@ class ItineraryBloc extends Bloc<ItineraryEvent, ItineraryState> {
     on<RemoveStop>(_onRemoveStop);
     on<SaveItinerary>(_onSaveItinerary);
     on<SelectTripDates>(_onSelectTripDates);
+    on<ResetTrip>(_onResetTrip);
     on<OrganizeItinerary>(_onOrganizeItinerary);
   }
 
   Future<void> _onLoadPois(
       LoadPois event, Emitter<ItineraryState> emit) async {
+    // Preserve existing stops if already editing
+    final currentState = state;
+    final existingStops = currentState is ItineraryEditing
+        ? currentState.stops
+        : const <ItineraryStop>[];
+    final existingStartDate =
+        currentState is ItineraryEditing ? currentState.startDate : null;
+    final existingEndDate =
+        currentState is ItineraryEditing ? currentState.endDate : null;
+    final existingIsOrganized =
+        currentState is ItineraryEditing ? currentState.isOrganized : false;
+
     emit(ItineraryLoading());
     try {
       final pois = await getPois();
-      emit(ItineraryEditing(availablePois: pois, stops: const []));
+      emit(ItineraryEditing(
+        availablePois: pois,
+        stops: existingStops,
+        startDate: existingStartDate,
+        endDate: existingEndDate,
+        isOrganized: existingIsOrganized,
+      ));
     } catch (e) {
       emit(ItineraryError(e.toString()));
     }
@@ -186,6 +207,16 @@ class ItineraryBloc extends Bloc<ItineraryEvent, ItineraryState> {
       } catch (e) {
         emit(ItineraryError(e.toString()));
       }
+    }
+  }
+
+  Future<void> _onResetTrip(
+      ResetTrip event, Emitter<ItineraryState> emit) async {
+    try {
+      final pois = await getPois();
+      emit(ItineraryEditing(availablePois: pois, stops: const []));
+    } catch (e) {
+      emit(ItineraryError(e.toString()));
     }
   }
 
@@ -273,9 +304,26 @@ class ItineraryBloc extends Bloc<ItineraryEvent, ItineraryState> {
     try {
       final startDate = savedState.startDate!;
       final endDate = savedState.endDate!;
+      final now = DateTime.now();
 
-      // Collect crowd scores for each stop at each available hour
-      final stopScores = <int, Map<int, double>>{}; // stopIdx -> {hour -> score}
+      // Build list of available (day, hour) time slots across the trip
+      final availableSlots = <({DateTime date, int hour})>[];
+      var tripDay = startDate;
+      while (!tripDay.isAfter(endDate)) {
+        final isToday = tripDay.year == now.year &&
+            tripDay.month == now.month &&
+            tripDay.day == now.day;
+        // Only consider hours that haven't passed yet
+        final earliestHour = isToday ? max(now.hour + 1, 8) : 8;
+        for (int hour = earliestHour; hour <= 20; hour++) {
+          availableSlots.add((date: tripDay, hour: hour));
+        }
+        tripDay = tripDay.add(const Duration(days: 1));
+      }
+
+      // Collect crowd scores for each stop at each available slot
+      final stopSlotScores =
+          <int, Map<int, double>>{}; // stopIdx -> {slotIdx -> score}
 
       for (int i = 0; i < savedState.stops.length; i++) {
         final stop = savedState.stops[i];
@@ -284,77 +332,51 @@ class ItineraryBloc extends Bloc<ItineraryEvent, ItineraryState> {
           stop.longitude,
         );
 
-        // Get the heatmap for the trip's day(s) of week
-        // Average crowd across all trip days for each hour
-        final hourScores = <int, double>{};
-        final tripDays = <int>[];
-
-        var day = startDate;
-        while (!day.isAfter(endDate)) {
-          tripDays.add((day.weekday - 1) % 7); // Convert to 0=Mon
-          day = day.add(const Duration(days: 1));
+        final slotScores = <int, double>{};
+        for (int s = 0; s < availableSlots.length; s++) {
+          final slot = availableSlots[s];
+          final dayIdx = (slot.date.weekday - 1) % 7;
+          slotScores[s] = analysis.temporalHeatmap[dayIdx][slot.hour].toDouble();
         }
-
-        final uniqueDays = tripDays.toSet();
-        for (int hour = 8; hour <= 20; hour++) {
-          // Reasonable visiting hours: 8am-8pm
-          double totalCrowd = 0;
-          for (final d in uniqueDays) {
-            totalCrowd += analysis.temporalHeatmap[d][hour];
-          }
-          // Lower crowd = better score
-          hourScores[hour] = totalCrowd / uniqueDays.length;
-        }
-
-        stopScores[i] = hourScores;
+        stopSlotScores[i] = slotScores;
       }
 
-      // Greedy assignment: assign each stop to the best available hour
-      // Sort stops by how constrained they are (fewer good hours = assign first)
+      // Greedy assignment: assign each stop to the best available slot
       final stopIndices = List.generate(savedState.stops.length, (i) => i);
 
-      // Find the max crowd across all stops/hours for normalization
-      double maxCrowd = 1;
-      for (final scores in stopScores.values) {
-        for (final v in scores.values) {
-          maxCrowd = max(maxCrowd, v);
-        }
-      }
-
-      // Sort by best-to-worst ratio (most constrained first)
+      // Sort by most constrained first (smallest range between best and worst)
       stopIndices.sort((a, b) {
-        final aScores = stopScores[a]!.values.toList()..sort();
-        final bScores = stopScores[b]!.values.toList()..sort();
-        // Ratio of best vs worst — lower ratio = more constrained
-        final aRange = aScores.isEmpty ? 0 : aScores.last - aScores.first;
-        final bRange = bScores.isEmpty ? 0 : bScores.last - bScores.first;
+        final aScores = stopSlotScores[a]!.values.toList()..sort();
+        final bScores = stopSlotScores[b]!.values.toList()..sort();
+        final aRange = aScores.isEmpty ? 0.0 : aScores.last - aScores.first;
+        final bRange = bScores.isEmpty ? 0.0 : bScores.last - bScores.first;
         return aRange.compareTo(bRange);
       });
 
-      final usedHours = <int>{};
+      final usedSlots = <int>{};
       final organizedStops = List<ItineraryStop>.from(savedState.stops);
 
       for (final idx in stopIndices) {
-        final scores = stopScores[idx]!;
-        // Find best available hour (lowest crowd)
-        int bestHour = 10; // default fallback
+        final scores = stopSlotScores[idx]!;
+        // Find best available slot (lowest crowd)
+        int bestSlotIdx = 0;
         double bestScore = double.infinity;
 
         for (final entry in scores.entries) {
-          if (!usedHours.contains(entry.key) && entry.value < bestScore) {
+          if (!usedSlots.contains(entry.key) && entry.value < bestScore) {
             bestScore = entry.value;
-            bestHour = entry.key;
+            bestSlotIdx = entry.key;
           }
         }
 
-        usedHours.add(bestHour);
+        usedSlots.add(bestSlotIdx);
 
-        // Assign visit time on the start date at the best hour
+        final bestSlot = availableSlots[bestSlotIdx];
         final visitTime = DateTime(
-          startDate.year,
-          startDate.month,
-          startDate.day,
-          bestHour,
+          bestSlot.date.year,
+          bestSlot.date.month,
+          bestSlot.date.day,
+          bestSlot.hour,
         );
 
         organizedStops[idx] = organizedStops[idx].copyWith(

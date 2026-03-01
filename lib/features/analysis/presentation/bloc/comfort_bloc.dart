@@ -50,6 +50,7 @@ class ComfortLoading extends ComfortState {}
 class ComfortLoaded extends ComfortState {
   final List<MobilityDataPoint> mobilityData;
   final List<PopularArea> popularAreas;
+  final int totalRecordCount;
   final ComfortIndex? comfortIndex;
   final TemporalAnalysis? temporalAnalysis;
   final List<HourlyWeather>? weatherData;
@@ -61,6 +62,7 @@ class ComfortLoaded extends ComfortState {
   const ComfortLoaded({
     required this.mobilityData,
     required this.popularAreas,
+    this.totalRecordCount = 0,
     this.comfortIndex,
     this.temporalAnalysis,
     this.weatherData,
@@ -74,6 +76,7 @@ class ComfortLoaded extends ComfortState {
   List<Object?> get props => [
         mobilityData,
         popularAreas,
+        totalRecordCount,
         comfortIndex,
         temporalAnalysis,
         weatherData,
@@ -86,6 +89,7 @@ class ComfortLoaded extends ComfortState {
   ComfortLoaded copyWith({
     List<MobilityDataPoint>? mobilityData,
     List<PopularArea>? popularAreas,
+    int? totalRecordCount,
     ComfortIndex? comfortIndex,
     TemporalAnalysis? temporalAnalysis,
     List<HourlyWeather>? weatherData,
@@ -98,6 +102,7 @@ class ComfortLoaded extends ComfortState {
     return ComfortLoaded(
       mobilityData: mobilityData ?? this.mobilityData,
       popularAreas: popularAreas ?? this.popularAreas,
+      totalRecordCount: totalRecordCount ?? this.totalRecordCount,
       comfortIndex: comfortIndex ?? this.comfortIndex,
       temporalAnalysis: temporalAnalysis ?? this.temporalAnalysis,
       weatherData: weatherData ?? this.weatherData,
@@ -146,9 +151,11 @@ class ComfortBloc extends Bloc<ComfortEvent, ComfortState> {
     try {
       final mobilityData = await getMobilityData();
       final popularAreas = await getPopularAreas();
+      final totalRecords = await getMobilityData.getTotalRecordCount();
       emit(ComfortLoaded(
         mobilityData: mobilityData,
         popularAreas: popularAreas,
+        totalRecordCount: totalRecords,
       ));
     } catch (e) {
       emit(ComfortError(e.toString()));
@@ -163,10 +170,12 @@ class ComfortBloc extends Bloc<ComfortEvent, ComfortState> {
       final mobilityData = await getMobilityData();
       final popularAreas = await getPopularAreas();
       final temporalAnalysis = await getTemporalAnalysis();
+      final totalRecords = await getMobilityData.getTotalRecordCount();
 
       emit(ComfortLoaded(
         mobilityData: mobilityData,
         popularAreas: popularAreas,
+        totalRecordCount: totalRecords,
         temporalAnalysis: temporalAnalysis,
         isWeatherLoading: true,
       ));
@@ -186,6 +195,7 @@ class ComfortBloc extends Bloc<ComfortEvent, ComfortState> {
         emit(ComfortLoaded(
           mobilityData: mobilityData,
           popularAreas: popularAreas,
+          totalRecordCount: totalRecords,
           temporalAnalysis: temporalAnalysis,
           weatherData: weatherData,
           currentWeather: currentWeather,
@@ -197,6 +207,7 @@ class ComfortBloc extends Bloc<ComfortEvent, ComfortState> {
         emit(ComfortLoaded(
           mobilityData: mobilityData,
           popularAreas: popularAreas,
+          totalRecordCount: totalRecords,
           temporalAnalysis: temporalAnalysis,
           isWeatherLoading: false,
           weatherError: e.toString(),

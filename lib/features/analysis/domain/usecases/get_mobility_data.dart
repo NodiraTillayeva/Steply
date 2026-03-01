@@ -9,4 +9,8 @@ class GetMobilityData {
   Future<List<MobilityDataPoint>> call() {
     return repository.getMobilityData();
   }
+
+  Future<int> getTotalRecordCount() {
+    return repository.getTotalRecordCount();
+  }
 }

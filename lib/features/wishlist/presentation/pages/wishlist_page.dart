@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:steply/core/constants/app_constants.dart';
 import 'package:steply/features/analysis/presentation/bloc/itinerary_bloc.dart';
+import 'package:steply/features/wishlist/domain/entities/wishlist_place.dart';
 import 'package:steply/features/wishlist/presentation/bloc/wishlist_bloc.dart';
 import 'package:steply/features/wishlist/presentation/pages/wishlist_map_page.dart';
 import 'package:steply/features/wishlist/presentation/widgets/place_analysis_sheet.dart';
@@ -359,22 +361,8 @@ class _WishlistPageState extends State<WishlistPage> {
                         _ActionChip(
                           icon: Icons.add_location_alt_outlined,
                           label: 'Add to Trip',
-                          onTap: () {
-                            context.read<ItineraryBloc>().add(
-                                  AddStopByDetails(
-                                    name: place.name,
-                                    lat: place.latitude,
-                                    lng: place.longitude,
-                                  ),
-                                );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text(
-                                    'Added to itinerary'),
-                                backgroundColor: AppColors.emerald,
-                              ),
-                            );
-                          },
+                          onTap: () => _showAddToTripSheet(
+                              context, place),
                         ),
                       ],
                     ),
@@ -385,6 +373,117 @@ class _WishlistPageState extends State<WishlistPage> {
           ),
         );
       },
+    );
+  }
+
+  void _showAddToTripSheet(BuildContext context, WishlistPlace place) {
+    final itineraryState = context.read<ItineraryBloc>().state;
+    final editing = itineraryState is ItineraryEditing
+        ? itineraryState
+        : null;
+    final hasActiveTrip = editing != null && editing.stops.isNotEmpty;
+    final tripSubtitle = hasActiveTrip
+        ? '${editing.stops.length} stops${editing.startDate != null ? ' · ${DateFormat('MMM d').format(editing.startDate!)}' : ''}'
+        : '';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.xxl)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, 12, AppSpacing.lg, AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Add to Trip',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Where should we add ${place.name}?',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppColors.textTertiary),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                // Current trip option
+                if (hasActiveTrip)
+                  _TripOptionCard(
+                    icon: Icons.route,
+                    title: 'Current Trip',
+                    subtitle: tripSubtitle,
+                    gradient: AppColors.emeraldGradient,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      context.read<ItineraryBloc>().add(
+                            AddStopByDetails(
+                              name: place.name,
+                              lat: place.latitude,
+                              lng: place.longitude,
+                            ),
+                          );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text('${place.name} added to trip'),
+                          backgroundColor: AppColors.emerald,
+                        ),
+                      );
+                      context.go('/trip');
+                    },
+                  ),
+                if (hasActiveTrip)
+                  const SizedBox(height: AppSpacing.sm + 4),
+                // New trip option
+                _TripOptionCard(
+                  icon: Icons.add_circle_outline,
+                  title: 'Start New Trip',
+                  subtitle: 'Create a new itinerary',
+                  gradient: AppColors.primaryGradient,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    // Reset to fresh editing state, then add the stop
+                    context.read<ItineraryBloc>().add(ResetTrip());
+                    // Small delay to ensure ResetTrip finishes before adding stop
+                    Future.delayed(
+                        const Duration(milliseconds: 100), () {
+                      if (context.mounted) {
+                        context.read<ItineraryBloc>().add(
+                              AddStopByDetails(
+                                name: place.name,
+                                lat: place.latitude,
+                                lng: place.longitude,
+                              ),
+                            );
+                        context.go('/trip');
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -668,6 +767,75 @@ class _AddOptionCard extends StatelessWidget {
                     color: AppColors.textTertiary,
                   ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Trip Option Card ───
+
+class _TripOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final LinearGradient gradient;
+  final VoidCallback onTap;
+
+  const _TripOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: Colors.black.withOpacity(0.04)),
+          boxShadow: AppShadows.sm,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: gradient,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                color: AppColors.textTertiary, size: 22),
           ],
         ),
       ),

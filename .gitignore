@@ -68,3 +68,7 @@ build/
 *.onnx
 *.pt
 *.pth
+
+# iOS generated files with build-time secrets
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh

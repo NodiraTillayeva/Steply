@@ -13,4 +13,5 @@ abstract class MobilityRepository {
   Future<TemporalAnalysis> getTemporalAnalysis();
   Future<List<Recommendation>> getRecommendations(List<HourlyWeather> weatherData);
   Future<LocalTemporalAnalysis> getLocalTemporalAnalysis(double lat, double lng);
+  Future<int> getTotalRecordCount();
 }

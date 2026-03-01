@@ -199,6 +199,11 @@ class MobilityRepositoryImpl implements MobilityRepository {
   }
 
   @override
+  Future<int> getTotalRecordCount() {
+    return datasource.getTotalRecordCount();
+  }
+
+  @override
   Future<LocalTemporalAnalysis> getLocalTemporalAnalysis(
       double lat, double lng) async {
     // Use pre-computed data to approximate local patterns

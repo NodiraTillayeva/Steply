@@ -334,9 +334,9 @@ class AppStrings {
   static const String movementIntelligence = 'Movement Intelligence';
   static const String smartTiming = 'Smart Timing';
 
-  // OpenAI
-  static const String openAiApiKey =
-      String.fromEnvironment('OPENAI_API_KEY', defaultValue: '');
+  // Gemini
+  static const String geminiApiKey =
+      String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
 
   // Place Analysis Sheet
   static const String analysisRightNow = 'Right Now';

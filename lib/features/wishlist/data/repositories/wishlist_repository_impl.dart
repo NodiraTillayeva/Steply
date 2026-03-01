@@ -1,9 +1,9 @@
-import 'package:steply/features/wishlist/data/datasources/openai_remote_datasource.dart';
+import 'package:steply/features/wishlist/data/datasources/gemini_remote_datasource.dart';
 import 'package:steply/features/wishlist/domain/entities/wishlist_place.dart';
 import 'package:steply/features/wishlist/domain/repositories/wishlist_repository.dart';
 
 class WishlistRepositoryImpl implements WishlistRepository {
-  final OpenAiRemoteDatasource datasource;
+  final GeminiRemoteDatasource datasource;
   final List<WishlistPlace> _places = [];
 
   WishlistRepositoryImpl({required this.datasource});
